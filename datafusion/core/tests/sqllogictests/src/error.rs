@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+use arrow::error::ArrowError;
 use datafusion_common::DataFusionError;
 use sqllogictest::TestError;
 use sqlparser::parser::ParserError;
@@ -32,12 +33,8 @@ pub enum DFSqlLogicTestError {
     DataFusion(DataFusionError),
     /// Error returned when SQL is syntactically incorrect.
     Sql(ParserError),
-    /// Error returned on a branch that we know it is possible
-    /// but to which we still have no implementation for.
-    /// Often, these errors are tracked in our issue tracker.
-    NotImplemented(String),
-    /// Error returned from DFSqlLogicTest inner
-    Internal(String),
+    /// Error from arrow-rs
+    Arrow(ArrowError),
 }
 
 impl From<TestError> for DFSqlLogicTestError {
@@ -58,6 +55,12 @@ impl From<ParserError> for DFSqlLogicTestError {
     }
 }
 
+impl From<ArrowError> for DFSqlLogicTestError {
+    fn from(value: ArrowError) -> Self {
+        DFSqlLogicTestError::Arrow(value)
+    }
+}
+
 impl Display for DFSqlLogicTestError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -70,12 +73,7 @@ impl Display for DFSqlLogicTestError {
                 write!(f, "DataFusion error: {}", error)
             }
             DFSqlLogicTestError::Sql(error) => write!(f, "SQL Parser error: {}", error),
-            DFSqlLogicTestError::NotImplemented(error) => {
-                write!(f, "This feature is not implemented yet: {}", error)
-            }
-            DFSqlLogicTestError::Internal(error) => {
-                write!(f, "Internal error: {}", error)
-            }
+            DFSqlLogicTestError::Arrow(error) => write!(f, "Arrow error: {}", error),
         }
     }
 }
